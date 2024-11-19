@@ -2,7 +2,7 @@
 Author: Vincent Yang
 Date: 2024-11-01 01:35:27
 LastEditors: Vincent Yang
-LastEditTime: 2024-11-01 02:04:22
+LastEditTime: 2024-11-19 02:39:51
 FilePath: /boc-rate/boc-rate.py
 Telegram: https://t.me/missuo
 GitHub: https://github.com/missuo
@@ -50,8 +50,39 @@ currencyDict = {
     'ZAR': '南非兰特'
 }
 
+def get_page_data(url, headers, chinese_name):
+    try:
+        response = httpx.get(url=url, headers=headers)
+        response.raise_for_status()
+        tree = etree.HTML(response.content.decode('utf-8'))
+        
+        # Get all rows
+        rows = tree.xpath('//table[@align="left"]/tr[position()>1]')
+        
+        # Find rows for specified currency
+        currency_data = []
+        for row in rows:
+            currency_name = row.xpath('./td[1]/text()')[0].strip()
+            if currency_name == chinese_name:
+                # Extract data
+                rate_data = {
+                    "foreignExchangeBuyingRate": row.xpath('./td[2]/text()')[0].strip() if row.xpath('./td[2]/text()') else "",
+                    "cashBuyingRate": row.xpath('./td[3]/text()')[0].strip() if row.xpath('./td[3]/text()') else "",
+                    "foreignExchangeSellingRate": row.xpath('./td[4]/text()')[0].strip() if row.xpath('./td[4]/text()') else "",
+                    "cashSellingRate": row.xpath('./td[5]/text()')[0].strip() if row.xpath('./td[5]/text()') else "",
+                    "bocConversionRate": row.xpath('./td[6]/text()')[0].strip() if row.xpath('./td[6]/text()') else "",
+                    "releaseTime": row.xpath('./td[7]/text()')[0].strip()
+                }
+                currency_data.append(rate_data)
+                
+        return currency_data
+
+    except Exception as e:
+        print(f"Error fetching page {url}: {e}")
+        return []
+
 def get_exchange_rate(currency_code):
-    url = "https://www.boc.cn/sourcedb/whpj/index.html"
+    base_url = "https://www.boc.cn/sourcedb/whpj/index"
     headers = {
         "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8,zh-TW;q=0.7,zh;q=0.6",
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
@@ -61,36 +92,30 @@ def get_exchange_rate(currency_code):
     }
 
     try:
-        # Get and parse the page
-        response = httpx.get(url=url, headers=headers)
-        response.raise_for_status()
-        tree = etree.HTML(response.content.decode('utf-8'))
-        
-        # Get all rows
-        rows = tree.xpath('//table[@align="left"]/tr[position()>1]')
-        
-        # Find specified currency
         chinese_name = currencyDict.get(currency_code)
         if not chinese_name:
             return None
             
-        # Find corresponding row
-        for row in rows:
-            currency_name = row.xpath('./td[1]/text()')[0].strip()
-            if currency_name == chinese_name:
-                # Extract data
-                data = {
-                    "data": [{
-                        "currencyName": currency_code,
-                        "foreignExchangeBuyingRate": row.xpath('./td[2]/text()')[0].strip() if row.xpath('./td[2]/text()') else "",
-                        "cashBuyingRate": row.xpath('./td[3]/text()')[0].strip() if row.xpath('./td[3]/text()') else "",
-                        "foreignExchangeSellingRate": row.xpath('./td[4]/text()')[0].strip() if row.xpath('./td[4]/text()') else "",
-                        "cashSellingRate": row.xpath('./td[5]/text()')[0].strip() if row.xpath('./td[5]/text()') else "",
-                        "bocConversionRate": row.xpath('./td[6]/text()')[0].strip() if row.xpath('./td[6]/text()') else "",
-                        "releaseTime": row.xpath('./td[7]/text()')[0].strip()
-                    }]
-                }
-                return data
+        all_data = []
+        
+        # Get first page (index.html)
+        first_page_url = f"{base_url}.html"
+        first_page_data = get_page_data(first_page_url, headers, chinese_name)
+        all_data.extend(first_page_data)
+        
+        # Get pages 2-5 (index_1.html to index_4.html)
+        for page in range(1, 5):
+            page_url = f"{base_url}_{page}.html"
+            page_data = get_page_data(page_url, headers, chinese_name)
+            all_data.extend(page_data)
+
+        if all_data:
+            return {
+                "data": [{
+                    "currencyName": currency_code,
+                    **rate_data
+                } for rate_data in all_data]
+            }
                 
         return None
 
