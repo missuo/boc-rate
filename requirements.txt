@@ -1,5 +1,5 @@
 Flask==3.0.3
 Flask_Caching==2.3.0
 Flask_Cors==4.0.0
-httpx==0.13.3
+httpx==0.23.0
 lxml==5.2.1
