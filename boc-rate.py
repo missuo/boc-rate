@@ -20,7 +20,7 @@ app = Flask(__name__)
 cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 CORS(app)
 
-currencyDict = {
+currency_dict = {
     'AED': '阿联酋迪拉姆',
     'AUD': '澳大利亚元',
     'BRL': '巴西里亚尔',
@@ -92,7 +92,7 @@ def get_exchange_rate(currency_code):
     }
 
     try:
-        chinese_name = currencyDict.get(currency_code)
+        chinese_name = currency_dict.get(currency_code)
         if not chinese_name:
             return None
             
@@ -141,7 +141,7 @@ def get_rate():
             }), 400
         
         currency = currency.upper()
-        if currency not in currencyDict:
+        if currency not in currency_dict:
             return jsonify({
                 "code": 400,
                 "message": f"Unsupported currency code: {currency}",
