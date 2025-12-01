@@ -1,0 +1,8 @@
+services:
+  boc-rate:
+    build: .
+    ports:
+      - "6666:6666"
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
