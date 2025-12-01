@@ -29,6 +29,26 @@ This project is a Flask-based API for fetching real-time exchange rates from the
 
    By default, the API runs on `http://0.0.0.0:6666`.
 
+## Deploy with Docker Compose
+
+1. **Clone the repository:**
+    ```bash
+    git clone https://github.com/missuo/boc-rate.git
+    cd boc-rate
+    ```
+
+2. **Start the service:**
+    ```bash
+    docker compose up -d
+    ```
+
+3. **Stop the service:**
+    ```bash
+    docker compose down
+    ```
+
+   The API will be accessible at `http://localhost:6666`.
+
 ## API Usage
 
 ### Endpoint
